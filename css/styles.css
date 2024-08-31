@@ -1,0 +1,15 @@
+.calculator {
+  max-width: 25rem;
+  margin: auto;
+}
+
+.display-panel {
+  font-size: 2.5rem;
+  text-align: right;
+  margin-bottom: 2rem;
+}
+
+.button {
+  font-size: 1.5rem;
+  height: 4.5rem;
+}
