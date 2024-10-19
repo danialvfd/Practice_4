@@ -1,44 +1,44 @@
-const display = document.getElementById("display");
+const mainDisplay = document.getElementById("display");
 const history = document.getElementById("historyContent");
-
-function main() {
-    _appendNumber();
-    _appendOperator();
-    _clearDisplay();
-}
+const isCalculated = false;
 
 function _appendNumber(input) {
-    display.value += input;
+    if (isCalculated) {
+        _clearDisplay();
+        isCalculated = false;
+    }
+    mainDisplay.value += input;
 }
 
 function _appendOperator(input) {
     if (input === 'sqrt') {
-        display.value = Math.sqrt(eval(display.value));
+        mainDisplay.value = Math.sqrt(eval(mainDisplay.value));
     } else if (input === 'cos') {
-        const angle = eval(display.value);
-        display.value = Math.cos(angle);
+        const angle = eval(mainDisplay.value);
+        mainDisplay.value = Math.cos(angle);
     } else if (input === 'pm') {
-        display.value = -eval(display.value);
+        mainDisplay.value = -eval(mainDisplay.value);
     } else if (input === 'Backspace') {
-        display.value = display.value.slice(0, -1);
+        mainDisplay.value = mainDisplay.value.slice(0, -1);
     } else {
-        display.value += input;
+        mainDisplay.value += input;
     }
 }
 
 function _clearDisplay() {
-    display.value = "";
+    mainDisplay.value = "";
 }
 
 function _calculate() {
     try {
-        const result = eval(display.value);
-        history.innerHTML = `${display.value} = ${result}`;
-        display.value = result;
+        const result = eval(mainDisplay.value);
+        history.innerHTML = `${mainDisplay.value} = ${result}`;
+        mainDisplay.value = result;
     }
     catch {
-        display.value = "Error!"
+        mainDisplay.value = "Error!"
+    }
+    finally {
+        isCalculated = true;
     }
 }
-
-main();
