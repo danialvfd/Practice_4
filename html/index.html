@@ -19,20 +19,25 @@
 <body>
     <div class="calculator is-ltr">
         <div class="box">
-            <input id="display" class="input display-panel" type="text" readonly>
+            <div class="box">
+                <div id="historyContent"></div>
+                <input id="display" class="input display-panel" type="text" readonly>
+            </div>
 
             <div class="columns is-mobile is-multiline">
                 <div class="column is-one-quarter">
-                    <button class="button is-fullwidth is-warning" onclick="_appendOperator('**2')">x<sub>2</sub></button>
+                    <button class="button is-fullwidth is-warning"
+                        onclick="_appendOperator('**2')">x<sub>2</sub></button>
                 </div>
                 <div class="column is-one-quarter">
-                    <button class="button is-fullwidth is-warning" onclick="_appendOperator('/')">√x</button>
+                    <button class="button is-fullwidth is-warning" onclick="_appendOperator('sqrt')">√x</button>
                 </div>
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-danger" onclick="_clearDisplay()">C</button>
                 </div>
                 <div class="column is-one-quarter">
-                    <button class="button is-fullwidth is-warning" onclick="_appendOperator('/')">&#8592;</button>
+                    <button class="button is-fullwidth is-warning"
+                        onclick="_appendOperator('Backspace')">&#8592;</button>
                 </div>
 
                 <div class="column is-one-quarter">
@@ -75,7 +80,7 @@
                 </div>
 
                 <div class="column is-one-quarter">
-                    <button class="button is-fullwidth is-warning" onclick="_appendOperator('%')">±</button>
+                    <button class="button is-fullwidth is-warning" onclick="_appendOperator('pm')">±</button>
                 </div>
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth" onclick="_appendNumber('0')">0</button>
@@ -94,7 +99,7 @@
                     <button class="button is-fullwidth is-success" onclick="_calculate()">=</button>
                 </div>
             </div>
-            
+
         </div>
         <script src="../js/myJavaScript.js"></script>
 </body>
