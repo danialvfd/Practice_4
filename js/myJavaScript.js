@@ -1,6 +1,6 @@
 const mainDisplay = document.getElementById("display");
 const history = document.getElementById("historyContent");
-const isCalculated = false;
+let isCalculated = false;   // مشکل پاک نشدن const 
 
 function _appendNumber(input) {
     if (isCalculated) {
@@ -26,7 +26,7 @@ function _appendOperator(input) {
 }
 
 function _clearDisplay() {
-    mainDisplay.value = "";
+    mainDisplay.value = "0";
 }
 
 function _calculate() {
@@ -35,10 +35,30 @@ function _calculate() {
         history.innerHTML = `${mainDisplay.value} = ${result}`;
         mainDisplay.value = result;
     }
-    catch {
+    catch (error) {
         mainDisplay.value = "Error!"
     }
     finally {
         isCalculated = true;
     }
 }
+
+document.addEventListener('keydown', function(event) {
+    // بررسی اینکه آیا کلید فشرده شده عدد است
+    if (!isNaN(event.key)) {
+        _appendNumber(event.key);
+    } else if (event.key === '+') {
+        _appendOperator('+');
+    } else if (event.key === '-') {
+        _appendOperator('-'); 
+    } else if (event.key === '*') {
+        _appendOperator('*'); 
+    } else if (event.key === '/') {
+        _appendOperator('/');
+    } else if (event.key === 'Enter') {
+        _calculate();
+    } else if (event.key === 'Backspace') {
+        _appendOperator('Backspace');
+    }
+});
+
