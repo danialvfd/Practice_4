@@ -1,13 +1,26 @@
 const mainDisplay = document.getElementById("display");
 const history = document.getElementById("historyContent");
-let isCalculated = false;   // مشکل پاک نشدن const 
+var isCalculated = false;   // مشکل پاک نشدن const 
 
 function _appendNumber(input) {
+    _setMainDisplayValue(input);
+    _setDefualtDisplayValue();
+}
+
+function _setMainDisplayValue(input) {
     if (isCalculated) {
         _clearDisplay();
         isCalculated = false;
+        mainDisplay.value = input;
+    } else {
+        mainDisplay.value += input;
     }
-    mainDisplay.value += input;
+}
+
+function _setDefualtDisplayValue() {
+    if (mainDisplay.value === "0") {
+        mainDisplay.value = "";
+    }
 }
 
 function _appendOperator(input) {
@@ -31,7 +44,7 @@ function _clearDisplay() {
 
 function _calculate() {
     try {
-        const result = eval(mainDisplay.value);
+        let result = eval(mainDisplay.value);    // const نباشد
         history.innerHTML = `${mainDisplay.value} = ${result}`;
         mainDisplay.value = result;
     }
@@ -43,16 +56,15 @@ function _calculate() {
     }
 }
 
-document.addEventListener('keydown', function(event) {
-    // بررسی اینکه آیا کلید فشرده شده عدد است
+document.addEventListener('keydown', function (event) {
     if (!isNaN(event.key)) {
         _appendNumber(event.key);
     } else if (event.key === '+') {
         _appendOperator('+');
     } else if (event.key === '-') {
-        _appendOperator('-'); 
+        _appendOperator('-');
     } else if (event.key === '*') {
-        _appendOperator('*'); 
+        _appendOperator('*');
     } else if (event.key === '/') {
         _appendOperator('/');
     } else if (event.key === 'Enter') {
