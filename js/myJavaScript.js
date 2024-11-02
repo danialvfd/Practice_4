@@ -1,5 +1,5 @@
 const mainDisplay = document.getElementById("display");
-const history = document.getElementById("historyContent");
+const historyDisplay = document.getElementById("historyContent");
 var isCalculated = false;
 var lastInput = '';
 
@@ -8,7 +8,11 @@ function appendNumber(input) {
         isCalculated = false;
         mainDisplay.value = input;
     } else {
-        mainDisplay.value += input;
+        if (mainDisplay.value === '0') {
+            mainDisplay.value = input; 
+        } else {
+            mainDisplay.value += input;
+        }
         lastInput = 'number';
     }
 }
@@ -42,15 +46,15 @@ function appendOperator(input) {
 
 function clearDisplay() {
     mainDisplay.value = '0';
-    history.innerHTML = '';
-    lastInput = '';
+    historyDisplay.innerHTML = '';
+    lastInput = 'number';
 }
 
 function calculate() {
     try {
         let result = eval(mainDisplay.value);    // const نباشد
         result = parseFloat(result.toFixed(4));  // بدون parsfloat کلا 4 رقم اعشار می زند
-        history.innerHTML = `${mainDisplay.value} = ${result}`;
+        historyDisplay.innerHTML = `${mainDisplay.value} = ${result}`;
         mainDisplay.value = result;
     }
     catch (error) {
@@ -79,4 +83,5 @@ document.addEventListener('keydown', function (event) {
         appendOperator('Backspace');
     }
 });
+
 
