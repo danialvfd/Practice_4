@@ -24,22 +24,31 @@ function setDefualtDisplayValue() {
 }
 
 function appendOperator(input) {
+    const operators = ['+', '-', '*', '/', '^2'];
     if (lastInput === 'number') {
         if (input === 'sqrt') {
             mainDisplay.value = Math.sqrt(eval(mainDisplay.value));
             lastInput = 'number';
         } else if (input === 'cos') {
             const angle = eval(mainDisplay.value);
-            mainDisplay.value = Math.cos(angle);
+            mainDisplay.value = Math.cos(angle * (Math.PI / 180));
             lastInput = 'number';
         } else if (input === 'pm') {
             mainDisplay.value = -eval(mainDisplay.value);
             lastInput = 'number';
-        } else if (input === 'Backspace') {
+        } else if (input === '^2') {
+            mainDisplay.value = Math.pow(eval(mainDisplay.value), 2);
+            lastInput = 'number';
+        } else if (input === 'Backspace') { 
             mainDisplay.value = mainDisplay.value.slice(0, -1);
         } else {
             mainDisplay.value += input;
             lastInput = 'operator';
+        }
+    } else if (lastInput === 'operator') {
+        const lastInputOperator = mainDisplay.value[mainDisplay.value.length - 1];
+        if (operators.includes(lastInputOperator)) {
+            mainDisplay.value = mainDisplay.value.slice(0, -1) + input;
         }
     }
 }
@@ -55,7 +64,7 @@ function calculate() {
         let result = eval(mainDisplay.value);    // const نباشد
         result = parseFloat(result.toFixed(4));  // بدون parsfloat کلا 4 رقم اعشار می زند
         historyDisplay.innerHTML = `${mainDisplay.value} = ${result}`;
-        mainDisplay.value = result;
+        mainDisplay.value = '';
     }
     catch (error) {
         mainDisplay.value = "Error!"

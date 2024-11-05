@@ -13,3 +13,9 @@
   font-size: 1.5rem;
   height: 4.5rem;
 }
+
+.history-display {
+  color: brown;
+  font-family: cursive;
+  padding-bottom: 5px;
+}
