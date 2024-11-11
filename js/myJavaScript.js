@@ -74,7 +74,8 @@ function appendOperator(input) {
     } else if (lastInput === 'operator') {
         const lastInputOperator = mainDisplay.value[mainDisplay.value.length - 1];
         if (operators.includes(lastInputOperator)) {
-            mainDisplay.value = mainDisplay.value.slice(0, -1) + input;
+            mainDisplay.value = mainDisplay.value.slice(0, -1);
+            lastInput = 'number';
         }
     }
 }
@@ -87,54 +88,63 @@ function clearDisplay() {
 
 function calculate() {
     try {
-        const result = compute(mainDisplay.value);
-        historyDisplay.innerHTML = ''; 
-        historyDisplay.innerHTML += `${mainDisplay.value} = ${result}`; 
-        mainDisplay.value = ''; 
+        const result = _compute(mainDisplay.value);
+        historyDisplay.innerHTML = `${mainDisplay.value} = ${result}`;
+        mainDisplay.value = '0';
     } catch (error) {
-        mainDisplay.value = "Error!";
+        if (error.message === "Division by zero") {
+            mainDisplay.value = "infinity!";
+        } else {
+            mainDisplay.value = "Error";
+        }
     } finally {
         isCalculated = true;
         lastInput = 'number';
     }
 }
 
-// تابع برای محاسبه عبارات ریاضی با استفاده از Stack
-function compute(expression) {
-    expression = expression.replace(/\s+/g, '');
+function _compute(expression) {
+    expression = expression.replace(/\s+/g, ''); // حذف فاصله‌ها
 
-    const numbers = new Stack();
-    const operators = new Stack();
+    const _numbers = new Stack();
+    const _operators = new Stack();
 
-    const precedence = { '+': 1, '-': 1, '*': 2, '/': 2};  // اولویت بندی عملگرها
+    const precedence = { '+': 1, '-': 1, '*': 2, '/': 2 };  // اولویت بندی عملگرها
 
-    const tokens = expression.match(/(\d+|[+\-*/])/g); // \d+  عدد یک یا چند رقمی
+    // جدا کردن توکن‌ها
+    const _tokens = expression.match(/\d+(\.\d+)?|[+\-*/()]/g);  // \d+  عدد یک یا چند رقمی و مشکل اعشار
 
-    for (let token of tokens) {
-        if (!isNaN(token)) {
-            numbers.push(parseFloat(token));
-        } else { // اگر توکن عملگر باشد
-            while (!operators.isEmpty() && precedence[operators.peek()] >= precedence[token]) {
-                const operator = operators.pop();
-                const right = numbers.pop();
-                const left = numbers.pop();
-                numbers.push(applyOperator(left, right, operator));
+    for (let i = 0; i < _tokens.length; i++) {
+        let token = _tokens[i];
+
+        if (!isNaN(token)) { 
+            _numbers.push(parseFloat(token));
+        } else if (token === '-' && (i === 0 || _tokens[i - 1] === '(' || isNaN(_tokens[i - 1]))) {
+            // اگر توکن علامت منفی و قبل از آن یک عملگر یا پرانتز باز است
+            // به‌جای اپراتور، آن را به عنوان یک عدد منفی در نظر بگیریم
+            _tokens[i + 1] = '-' + _tokens[i + 1];
+        } else {
+            while (!_operators.isEmpty() && precedence[_operators.peek()] >= precedence[token]) {
+                const operator = _operators.pop();
+                const right = _numbers.pop();
+                const left = _numbers.pop();
+                _numbers.push(_applyOperator(left, right, operator));
             }
-            operators.push(token);
+            _operators.push(token);
         }
     }
 
-    while (!operators.isEmpty()) { // پردازش باقی‌مانده عملگرها
-        const operator = operators.pop();
-        const right = numbers.pop();
-        const left = numbers.pop();
-        numbers.push(applyOperator(left, right, operator));
+    while (!_operators.isEmpty()) {
+        const operator = _operators.pop();
+        const right = _numbers.pop();
+        const left = _numbers.pop();
+        _numbers.push(_applyOperator(left, right, operator));
     }
 
-    return parseFloat(numbers.peek().toFixed(4)); // محدود کردن به ۴ رقم اعشار
+    return parseFloat(_numbers.peek().toFixed(4)); // نتیجه نهایی با دقت 4 رقم اعشار
 }
 
-function applyOperator(left, right, operator) {
+function _applyOperator(left, right, operator) {
     switch (operator) {
         case '+':
             return left + right;
@@ -145,13 +155,16 @@ function applyOperator(left, right, operator) {
         case '/':
             if (right === 0) throw new Error("Division by zero");
             return left / right;
+        default:
+            throw new Error("Invalid operator");
     }
 }
 
 document.addEventListener('keydown', function (event) {
+    event.preventDefault(); // جلوگیری از رفتار پیش‌فرض*****
     if (!isNaN(event.key)) {
         appendNumber(event.key);
-    } else if (['+', '-', '*', '/'].includes(event.key)) {
+    } else if (['+', '-', '*', '/','.'].includes(event.key)) {
         appendOperator(event.key);
     } else if (event.key === 'Enter') {
         calculate();
