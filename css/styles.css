@@ -14,9 +14,14 @@
   height: 4.5rem;
 }
 
-.history-display {
+.historyContent {
   color: brown;
   font-family: cursive;
   font-size: 1.5rem;
-  padding-bottom: 5px;
+  white-space: nowrap;
+  overflow-x: auto;  
+  overflow-y: hidden; /* اسکرول نشدن در حالت عمودی */
+  width: 100%;        
+  max-height: 80px;   
+  padding: 5px;     
 }

@@ -43,11 +43,14 @@ function appendNumber(input) {
         if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
             mainDisplay.value = input;
         } else {
-            mainDisplay.value += input;
+            if (mainDisplay.value.replace('.', '').length < 11) { 
+                mainDisplay.value += input;
+            }
         }
         lastInput = 'number';
     }
 }
+
 
 function appendOperator(input) {
     const operators = ['+', '-', '*', '/', '^2', 'sqrt', 'cos'];
@@ -72,8 +75,9 @@ function appendOperator(input) {
             lastInput = 'operator';
         }
     } else if (lastInput === 'operator') {
-        const lastInputOperator = mainDisplay.value[mainDisplay.value.length - 1];
-        if (operators.includes(lastInputOperator)) {
+        if (operators.includes(input)) {
+            mainDisplay.value = mainDisplay.value.slice(0, -1) + input;
+        } else if (input === 'Backspace') {
             mainDisplay.value = mainDisplay.value.slice(0, -1);
             lastInput = 'number';
         }
@@ -90,7 +94,7 @@ function calculate() {
     try {
         const result = _compute(mainDisplay.value);
         historyDisplay.innerHTML = `${mainDisplay.value} = ${result}`;
-        mainDisplay.value = '0';
+        mainDisplay.value = result;
     } catch (error) {
         if (error.message === "Division by zero") {
             mainDisplay.value = "infinity!";
@@ -117,7 +121,7 @@ function _compute(expression) {
     for (let i = 0; i < _tokens.length; i++) {
         let token = _tokens[i];
 
-        if (!isNaN(token)) { 
+        if (!isNaN(token)) {
             _numbers.push(parseFloat(token));
         } else if (token === '-' && (i === 0 || _tokens[i - 1] === '(' || isNaN(_tokens[i - 1]))) {
             // اگر توکن علامت منفی و قبل از آن یک عملگر یا پرانتز باز است
@@ -164,7 +168,7 @@ document.addEventListener('keydown', function (event) {
     event.preventDefault(); // جلوگیری از رفتار پیش‌فرض*****
     if (!isNaN(event.key)) {
         appendNumber(event.key);
-    } else if (['+', '-', '*', '/','.'].includes(event.key)) {
+    } else if (['+', '-', '*', '/', '.'].includes(event.key)) {
         appendOperator(event.key);
     } else if (event.key === 'Enter') {
         calculate();
