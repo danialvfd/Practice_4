@@ -2,6 +2,7 @@ const mainDisplay = document.getElementById("display");
 const historyDisplay = document.getElementById("historyContent");
 var isCalculated = false;
 var lastInput = '';
+let expression = ""; // متغیر جدید برای ذخیره عبارت
 
 class Stack {
     constructor() {
@@ -36,50 +37,60 @@ class Stack {
 }
 
 function appendNumber(input) {
+    // اگر محاسبه شده باشد، نمایشگر را با عدد جدید پر کنید
     if (isCalculated) {
         isCalculated = false;
-        mainDisplay.value = input;
+        mainDisplay.value = input; // مقدار جدید را نمایش دهید
+        expression = input; // شروع یک عبارت جدید
+        historyDisplay.innerHTML += input; // اضافه کردن عدد به تاریخچه
     } else {
-        if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
-            mainDisplay.value = input;
+        // اگر آخرین ورودی یک اپراتور باشد، نمایشگر را با عدد جدید پر کنید
+        if (lastInput === 'operator') {
+            mainDisplay.value = input; // عدد جدید را نمایش دهید
+            expression += input; // اضافه کردن عدد به عبارت
+            historyDisplay.innerHTML += input; // اضافه کردن عدد به تاریخچه
         } else {
-            if (mainDisplay.value.replace('.', '').length < 11) { 
-                mainDisplay.value += input;
+            // مدیریت ورودی نقطه اعشاری
+            if (input === '.' && mainDisplay.value.includes('.')) {
+                return; // اگر نقطه قبلاً وجود دارد، هیچ کاری نکنید
+            }
+
+            // اگر نمایشگر 0 است یا خطا وجود دارد، مقدار جدید را نمایش دهید
+            if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
+                mainDisplay.value = input;
+                expression = input; // شروع یک عبارت جدید
+                historyDisplay.innerHTML += input; // اضافه کردن عدد به تاریخچه
+            } else {
+                // اضافه کردن عدد به نمایشگر و عبارت
+                if (mainDisplay.value.replace('.', '').length < 11) { 
+                    mainDisplay.value += input;
+                    expression += input; // اضافه کردن عدد به عبارت
+                    historyDisplay.innerHTML += input; // اضافه کردن عدد به تاریخچه
+                }
             }
         }
-        lastInput = 'number';
+        lastInput = 'number'; // آخرین ورودی را به عنوان عدد ثبت کنید
     }
 }
 
-
 function appendOperator(input) {
     const operators = ['+', '-', '*', '/', '^2', 'sqrt', 'cos'];
-    if (lastInput === 'number') {
-        if (input === 'sqrt') {
-            mainDisplay.value = parseFloat(Math.sqrt(mainDisplay.value).toFixed(4));
-            lastInput = 'number';
-        } else if (input === 'cos') {
-            const angle = mainDisplay.value;
-            mainDisplay.value = parseFloat(Math.cos(angle * (Math.PI / 180)).toFixed(4));
-            lastInput = 'number';
-        } else if (input === 'pm') {
-            mainDisplay.value = -mainDisplay.value;
-            lastInput = 'number';
-        } else if (input === '^2') {
-            mainDisplay.value = Math.pow(mainDisplay.value, 2);
-            lastInput = 'number';
-        } else if (input === 'Backspace') {
-            mainDisplay.value = mainDisplay.value.slice(0, -1);
+    
+    if (lastInput === 'number' || lastInput === '') { // اجازه ورود اپراتور فقط بعد از عدد یا در ابتدای ورودی
+        expression += input; // اضافه کردن اپراتور به عبارت
+
+        if (lastInput === 'operator') {
+            // اگر آخرین ورودی اپراتور بود، اپراتور قبلی را با جدید جایگزین کنید
+            historyDisplay.innerHTML = historyDisplay.innerHTML.slice(0, -2) + ` ${input} `; 
         } else {
-            mainDisplay.value += input;
-            lastInput = 'operator';
+            historyDisplay.innerHTML += ` ${input} `; // اضافه کردن اپراتور به تاریخچه با فاصله
         }
+        
+        lastInput = 'operator'; // آخرین ورودی را به عنوان اپراتور ثبت کنید
     } else if (lastInput === 'operator') {
         if (operators.includes(input)) {
-            mainDisplay.value = mainDisplay.value.slice(0, -1) + input;
-        } else if (input === 'Backspace') {
-            mainDisplay.value = mainDisplay.value.slice(0, -1);
-            lastInput = 'number';
+            expression = expression.slice(0, -1) + input; // جایگزینی اپراتور قبلی با جدید
+            historyDisplay.innerHTML = historyDisplay.innerHTML.slice(0, -2) + ` ${input} `; // بروزرسانی تاریخچه 
         }
     }
 }
@@ -87,14 +98,15 @@ function appendOperator(input) {
 function clearDisplay() {
     mainDisplay.value = '0';
     historyDisplay.innerHTML = '';
-    lastInput = 'number';
+    expression = ""; // پاک کردن عبارت
+    lastInput = 'number'; // آخرین ورودی را به عنوان عدد ثبت کنید
 }
 
 function calculate() {
     try {
-        const result = _compute(mainDisplay.value);
-        historyDisplay.innerHTML = `${mainDisplay.value} = ${result}`;
-        mainDisplay.value = result;
+        const result = _compute(expression); // استفاده از عبارت برای محاسبه
+        historyDisplay.innerHTML += ` = ${result}`; // نمایش نتیجه در تاریخچه 
+        mainDisplay.value = result; // نمایش نتیجه نهایی
     } catch (error) {
         if (error.message === "Division by zero") {
             mainDisplay.value = "infinity!";
@@ -102,8 +114,8 @@ function calculate() {
             mainDisplay.value = "Error";
         }
     } finally {
-        isCalculated = true;
-        lastInput = 'number';
+        isCalculated = true; // نشان دادن اینکه محاسبه انجام شده است
+        lastInput = 'number'; // آخرین ورودی را به عنوان عدد ثبت کنید
     }
 }
 
@@ -121,58 +133,53 @@ function _compute(expression) {
     for (let i = 0; i < _tokens.length; i++) {
         let token = _tokens[i];
 
-        if (!isNaN(token)) {
-            _numbers.push(parseFloat(token));
-        } else if (token === '-' && (i === 0 || _tokens[i - 1] === '(' || isNaN(_tokens[i - 1]))) {
-            // اگر توکن علامت منفی و قبل از آن یک عملگر یا پرانتز باز است
-            // به‌جای اپراتور، آن را به عنوان یک عدد منفی در نظر بگیریم
-            _tokens[i + 1] = '-' + _tokens[i + 1];
-        } else {
-            while (!_operators.isEmpty() && precedence[_operators.peek()] >= precedence[token]) {
-                const operator = _operators.pop();
-                const right = _numbers.pop();
-                const left = _numbers.pop();
-                _numbers.push(_applyOperator(left, right, operator));
-            }
-            _operators.push(token);
-        }
+        if (!isNaN(token)) { 
+            _numbers.push(parseFloat(token)); 
+        } else if (token === '-' && (i === 0 || _tokens[i - 1] === '(' || isNaN(_tokens[i - 1]))) { 
+            _tokens[i + 1] = '-' + _tokens[i + 1]; 
+        } else { 
+            while (!_operators.isEmpty() && precedence[_operators.peek()] >= precedence[token]) { 
+                const operator = _operators.pop(); 
+                const right = _numbers.pop(); 
+                const left = _numbers.pop(); 
+                _numbers.push(_applyOperator(left, right, operator)); 
+            } 
+            _operators.push(token); 
+        } 
     }
 
-    while (!_operators.isEmpty()) {
-        const operator = _operators.pop();
-        const right = _numbers.pop();
-        const left = _numbers.pop();
-        _numbers.push(_applyOperator(left, right, operator));
+    while (!_operators.isEmpty()) { 
+        const operator = _operators.pop(); 
+        const right = _numbers.pop(); 
+        const left = _numbers.pop(); 
+        _numbers.push(_applyOperator(left, right, operator)); 
     }
 
-    return parseFloat(_numbers.peek().toFixed(4)); // نتیجه نهایی با دقت 4 رقم اعشار
+    return parseFloat(_numbers.peek().toFixed(4)); // نتیجه نهایی با دقت 4 رقم اعشار 
 }
 
-function _applyOperator(left, right, operator) {
-    switch (operator) {
-        case '+':
-            return left + right;
-        case '-':
-            return left - right;
-        case '*':
-            return left * right;
-        case '/':
-            if (right === 0) throw new Error("Division by zero");
-            return left / right;
-        default:
-            throw new Error("Invalid operator");
-    }
+function _applyOperator(left, right, operator) { 
+    switch (operator) { 
+        case '+': return left + right; 
+        case '-': return left - right; 
+        case '*': return left * right; 
+        case '/': if (right === 0) throw new Error("Division by zero"); return left / right; 
+        default: throw new Error("Invalid operator"); 
+    } 
 }
 
-document.addEventListener('keydown', function (event) {
-    event.preventDefault(); // جلوگیری از رفتار پیش‌فرض*****
-    if (!isNaN(event.key)) {
-        appendNumber(event.key);
-    } else if (['+', '-', '*', '/', '.'].includes(event.key)) {
-        appendOperator(event.key);
-    } else if (event.key === 'Enter') {
-        calculate();
-    } else if (event.key === 'Backspace') {
-        appendOperator('Backspace');
-    }
+document.addEventListener('keydown', function(event) { 
+    event.preventDefault(); 
+
+    if (!isNaN(event.key)) { 
+        appendNumber(event.key); 
+    } else if (['+', '-', '*', '/'].includes(event.key)) { 
+        appendOperator(event.key); 
+    } else if (event.key === 'Enter') { 
+        calculate(); 
+    } else if (event.key === '.') { 
+        appendNumber(event.key); 
+    } else if (event.key === 'Backspace') { 
+         appendOperator('Backspace');  
+     }  
 });
