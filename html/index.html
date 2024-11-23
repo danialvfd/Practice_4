@@ -21,17 +21,13 @@
     <div class="calculator is-ltr">
         <div class="box">
             <div class="box">
-                <!-- نمایش تاریخچه -->
                 <div id="historyContent" class="historyContent"></div>
-                <!-- نمایشگر ماشین حساب -->
                 <input id="display" class="input display-panel" type="text" value="0" readonly>
             </div>
 
             <div class="columns is-mobile is-multiline">
-                <!-- اضافه کردن دکمه‌های جدید -->
                 <div class="column is-one-quarter">
-                    <button class="button is-fullwidth is-warning"
-                        onclick="appendOperator('^2')">x<sup>2</sup></button>
+                    <button class="button is-fullwidth is-warning" onclick="appendOperator('^2')">x<sup>2</sup></button>
                 </div>
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('sqrt')">√x</button>
@@ -82,7 +78,6 @@
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('*')">×</button>
                 </div>
 
-                <!-- دکمه ± -->
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('pm')">±</button>
                 </div>
@@ -95,12 +90,9 @@
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('/')">÷</button>
                 </div>
-
-                <!-- دکمه cos -->
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('cos')">cos</button>
                 </div>
-                <!-- دکمه = -->
                 <div class="column">
                     <button class="button is-fullwidth is-success" onclick="calculate()">=</button>
                 </div>
