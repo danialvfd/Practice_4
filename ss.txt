@@ -498,6 +498,144 @@ document.addEventListener('keydown', function (event) {
 
 
 
+*****************
+بدون استک
+
+const mainDisplay = document.getElementById("display");
+const historyDisplay = document.getElementById("historyContent");
+var isCalculated = false;
+var lastInput = '';
+let memory = null; // مقدار حافظه برای ذخیره نتیجه قبلی
+let operator = ''; // اپراتور ذخیره شده
+let currentNumber = ''; // عدد فعلی
+
+function appendNumber(input) {
+    if (isCalculated) {
+        isCalculated = false;
+        mainDisplay.value = input;
+        currentNumber = input;
+        historyDisplay.innerHTML = input;
+    } else {
+        if (lastInput === 'operator') {
+            mainDisplay.value = input;
+            currentNumber = input;
+            historyDisplay.innerHTML += input;
+        } else {
+            if (input === '.' && mainDisplay.value.includes('.')) {
+                return;
+            }
+
+            if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
+                mainDisplay.value = input;
+                currentNumber = input;
+                historyDisplay.innerHTML += input;
+            } else {
+                if (mainDisplay.value.replace('.', '').length < 11) {
+                    mainDisplay.value += input;
+                    currentNumber += input;
+                    historyDisplay.innerHTML += input;
+                }
+            }
+        }
+    }
+    lastInput = 'number';
+}
+
+function appendOperator(input) {
+    if (lastInput === 'operator') {
+        // اگر کاربر دوباره اپراتور وارد کند، جایگزین می‌شود
+        operator = input;
+        historyDisplay.innerHTML = historyDisplay.innerHTML.slice(0, -2) + ` ${input} `;
+        return;
+    }
+
+    if (memory === null && currentNumber === '') {
+        return; // اگر هیچ عددی وارد نشده است، کاری انجام نمی‌دهیم
+    }
+
+    if (memory !== null && currentNumber === '') {
+        // اگر فقط اپراتور وارد شده باشد و حافظه موجود باشد
+        operator = input;
+        historyDisplay.innerHTML += ` ${input} `;
+        lastInput = 'operator';
+        return;
+    }
+
+    if (memory === null) {
+        // اگر حافظه خالی است، مقدار فعلی به حافظه منتقل می‌شود
+        memory = parseFloat(currentNumber);
+    } else if (currentNumber !== '') {
+        // اگر مقداری در حافظه و عدد فعلی داریم، محاسبه می‌کنیم
+        memory = _applyOperator(memory, parseFloat(currentNumber), operator);
+        mainDisplay.value = memory;
+    }
+
+    operator = input;
+    currentNumber = ''; // عدد فعلی را ریست می‌کنیم
+    historyDisplay.innerHTML += ` ${input} `;
+    lastInput = 'operator';
+}
+
+function calculate() {
+    if (operator && currentNumber) {
+        try {
+            memory = _applyOperator(memory, parseFloat(currentNumber), operator);
+            mainDisplay.value = memory;
+            historyDisplay.innerHTML += ` = ${memory}`;
+        } catch (error) {
+            mainDisplay.value = "Error!";
+        }
+        operator = '';
+        currentNumber = '';
+        isCalculated = true;
+        lastInput = 'number';
+    }
+}
+
+function clearDisplay() {
+    mainDisplay.value = '0';
+    historyDisplay.innerHTML = '';
+    memory = null;
+    currentNumber = '';
+    operator = '';
+    lastInput = 'number';
+}
+
+function backspace() {
+    if (currentNumber.length > 0) {
+        currentNumber = currentNumber.slice(0, -1);
+        mainDisplay.value = currentNumber || '0';
+        historyDisplay.innerHTML = historyDisplay.innerHTML.slice(0, -1);
+    }
+}
+
+function _applyOperator(left, right, operator) {
+    switch (operator) {
+        case '+': return left + right;
+        case '-': return left - right;
+        case '*': return left * right;
+        case '/': 
+            if (right === 0) throw new Error("Division by zero");
+            return left / right;
+        default: throw new Error("Invalid operator");
+    }
+}
+
+document.addEventListener('keydown', function(event) {
+    event.preventDefault();
+
+    if (!isNaN(event.key)) {
+        appendNumber(event.key);
+    } else if (['+', '-', '*', '/'].includes(event.key)) {
+        appendOperator(event.key);
+    } else if (event.key === 'Enter') {
+        calculate();
+    } else if (event.key === '.') {
+        appendNumber(event.key);
+    } else if (event.key === 'Backspace') {
+        backspace();
+    }
+});
 
 
 

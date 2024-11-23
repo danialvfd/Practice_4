@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="fa">
 
 <head>
@@ -20,14 +21,17 @@
     <div class="calculator is-ltr">
         <div class="box">
             <div class="box">
+                <!-- نمایش تاریخچه -->
                 <div id="historyContent" class="historyContent"></div>
-                <input id="display" class="input display-panel" type="text" readonly>
+                <!-- نمایشگر ماشین حساب -->
+                <input id="display" class="input display-panel" type="text" value="0" readonly>
             </div>
 
             <div class="columns is-mobile is-multiline">
+                <!-- اضافه کردن دکمه‌های جدید -->
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-warning"
-                        onclick="appendOperator('^2')">x<sub>2</sub></button>
+                        onclick="appendOperator('^2')">x<sup>2</sup></button>
                 </div>
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('sqrt')">√x</button>
@@ -36,8 +40,7 @@
                     <button class="button is-fullwidth is-danger" onclick="clearDisplay()">C</button>
                 </div>
                 <div class="column is-one-quarter">
-                    <button class="button is-fullwidth is-warning"
-                        onclick="appendOperator('Backspace')">&#8592;</button>
+                    <button class="button is-fullwidth is-warning" onclick="backspace()">&#8592;</button>
                 </div>
 
                 <div class="column is-one-quarter">
@@ -63,7 +66,7 @@
                     <button class="button is-fullwidth" onclick="appendNumber('6')">6</button>
                 </div>
                 <div class="column is-one-quarter">
-                    <button class="button is-fullwidth is-warning" onclick="appendOperator('/')">÷</button>
+                    <button class="button is-fullwidth is-warning" onclick="appendOperator('-')">-</button>
                 </div>
 
                 <div class="column is-one-quarter">
@@ -79,6 +82,7 @@
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('*')">×</button>
                 </div>
 
+                <!-- دکمه ± -->
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('pm')">±</button>
                 </div>
@@ -89,12 +93,14 @@
                     <button class="button is-fullwidth" onclick="appendNumber('.')">.</button>
                 </div>
                 <div class="column is-one-quarter">
-                    <button class="button is-fullwidth is-warning" onclick="appendOperator('-')">-</button>
+                    <button class="button is-fullwidth is-warning" onclick="appendOperator('/')">÷</button>
                 </div>
 
+                <!-- دکمه cos -->
                 <div class="column is-one-quarter">
                     <button class="button is-fullwidth is-warning" onclick="appendOperator('cos')">cos</button>
                 </div>
+                <!-- دکمه = -->
                 <div class="column">
                     <button class="button is-fullwidth is-success" onclick="calculate()">=</button>
                 </div>
@@ -102,6 +108,7 @@
 
         </div>
         <script src="../js/myJavaScript.js"></script>
+    </div>
 </body>
 
 </html>
