@@ -41,8 +41,14 @@ function appendNumber(input) {
     if (isCalculated) {
         isCalculated = false;
         mainDisplay.value = input;
-        expression = input;
-        historyDisplay.innerText += input;
+        if (expression.slice(-1)=== '='){
+            expression = input;
+            historyDisplay.innerText = input;
+        }
+        else {
+            expression += input;
+            historyDisplay.innerText += input;
+        }
     } else {
         if (lastInput === 'operator') {
             mainDisplay.value = input;
@@ -112,7 +118,7 @@ function appendOperator(input) {
     const regex = new RegExp(operatorPattern, 'g');
     const matches = expression.match(regex);
     if (matches && matches.length >= 2) {
-        calculate();
+        calculate(true);
 
     }
 }
@@ -126,10 +132,10 @@ function clearDisplay() {
     memory = null;
 }
 
-function calculate() {
+function calculate(isFromOperatore) {
     try {
-        const result = _compute();
-        historyDisplay.innerText += ` = ${result}`;
+        const result = _compute(isFromOperatore);
+      //  historyDisplay.innerText += ` = ${result}`;
         mainDisplay.value = result;
         memory = result;
         lastInput = ''
@@ -164,8 +170,10 @@ function backspace() {
     }
 }
 
-function _compute() {
-    expression = expression.replace(/\s+/g, '');
+function _compute(isFromOperatore) {
+    if (!isFromOperatore){
+        expression = expression.replace(/\s+/g, '');
+    }
 
     const _numbers = new Stack();
     const _operators = new Stack();
@@ -235,7 +243,7 @@ document.addEventListener('keydown', function(event) {
     } else if (['+', '-', '*', '/'].includes(event.key)) {
         appendOperator(event.key);
     } else if (event.key === 'Enter') {
-        calculate();
+        calculate(false);
     } else if (event.key === '.') {
         appendNumber(event.key);
     } else if (event.key === 'Backspace') {
