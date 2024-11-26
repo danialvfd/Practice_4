@@ -3,6 +3,7 @@ const historyDisplay = document.getElementById("historyContent");
 var isCalculated = false;
 var lastInput = '';
 let expression = ""; // متغیر برای ذخیره عبارت
+let memory = null;
 
 class Stack {
     constructor() {
@@ -71,50 +72,58 @@ function appendNumber(input) {
 function appendOperator(input) {
     const operators = ['+', '-', '*', '/', '^2', 'sqrt', 'cos'];
 
+    // اگر ورودی اپراتور ± باشد
     if (input === 'pm') {
-        // تغییر علامت عدد قبلی
-        if (lastInput === 'number' && expression.length > 0) {
-            let lastNumber = '';
-            let i = expression.length - 1;
-
-            while (i >= 0 && (/\d/).test(expression[i]) || expression[i] === '.') {
-                lastNumber = expression[i] + lastNumber;
-                i--;
-            }
-
-            if (lastNumber) {
-                let newNumber = (parseFloat(lastNumber) * -1).toString();
-                expression = expression.slice(0, i + 1) + newNumber;
-                mainDisplay.value = expression;
-                historyDisplay.innerText = expression;
-            }
+        if (lastInput === 'number' && mainDisplay.value !== '') {
+            let currentValue = parseFloat(mainDisplay.value);
+            currentValue *= -1;
+            mainDisplay.value = currentValue;
+            expression = expression.slice(0, -mainDisplay.value.length) + currentValue.toString();
+            historyDisplay.innerText = expression;
         }
-    } else if (operators.includes(input)) {
-        if (lastInput === 'number' || lastInput === '') {
+        return;
+    }
+
+    // اگر اپراتور در لیست تعریف‌شده باشد
+    if (operators.includes(input)) {
+        // اگر حافظه مقدار داشته باشد و ورودی جدیدی ثبت نشده باشد
+        if ((lastInput === '' || isCalculated) && memory !== null) {
+            expression = memory.toString(); // استفاده از مقدار حافظه به عنوان مقدار اولیه
+            historyDisplay.innerText = `${memory} ${input} `;
+            isCalculated = false; // ریست حالت محاسبه
+        }
+        
+        // اگر عددی قبل از اپراتور وارد شده باشد
+        if (lastInput === 'number') {
             expression += input;
             historyDisplay.innerText += ` ${input} `;
-            lastInput = 'operator';
-        } else if (lastInput === 'operator') {
-            if (operators.includes(input)) {
-                expression = expression.slice(0, -1) + input;
-                historyDisplay.innerText = historyDisplay.innerText.slice(0, -2) + ` ${input} `;
-            }
         }
+        // اگر قبلاً اپراتور دیگری ثبت شده باشد، جایگزین آن شود
+        else if (lastInput === 'operator') {
+            expression = expression.slice(0, -1) + input;
+            historyDisplay.innerText = historyDisplay.innerText.slice(0, -2) + ` ${input} `;
+        }
+        lastInput = 'operator';
     }
+
+    // اگر تعداد اپراتورها در عبارت >= 2 باشد، محاسبه شود
     const escapedOperators = operators.map(op => op.replace(/[-\/\\^$.*+?()[\]{}|]/g, '\\$&'));
     const operatorPattern = escapedOperators.join('|');
     const regex = new RegExp(operatorPattern, 'g');
     const matches = expression.match(regex);
     if (matches && matches.length >= 2) {
         calculate();
+
     }
 }
+
 
 function clearDisplay() {
     mainDisplay.value = '0';
     historyDisplay.innerText = '';
     expression = "";
     lastInput = 'number';
+    memory = null;
 }
 
 function calculate() {
@@ -122,9 +131,11 @@ function calculate() {
         const result = _compute();
         historyDisplay.innerText += ` = ${result}`;
         mainDisplay.value = result;
+        memory = result;
+        lastInput = ''
     } catch (error) {
         if (error.message === "Division by zero") {
-            mainDisplay.value = "infinity!";
+            mainDisplay.value = "Infinity!";
         } else {
             mainDisplay.value = "Error";
         }
@@ -133,6 +144,7 @@ function calculate() {
         lastInput = 'number';
     }
 }
+
 function backspace() {
     if (expression.length > 0) {
         const lastChar = expression[expression.length - 1];
