@@ -2,8 +2,8 @@ const mainDisplay = document.getElementById("display");
 const historyDisplay = document.getElementById("historyContent");
 var isCalculated = false;
 var lastInput = '';
-let expression = ""; // متغیر برای ذخیره عبارت
-let memory = null;
+var expression = ""; // متغیر برای ذخیره عبارت
+var memory = null;
 
 class Stack {
     constructor() {
@@ -78,33 +78,36 @@ function appendNumber(input) {
 function appendOperator(input) {
     const operators = ['+', '-', '*', '/', '^2', 'sqrt', 'cos'];
 
-    // اگر ورودی اپراتور ± باشد
     if (input === 'pm') {
         if (lastInput === 'number' && mainDisplay.value !== '') {
             let currentValue = parseFloat(mainDisplay.value);
             currentValue *= -1;
             mainDisplay.value = currentValue;
-            expression = expression.slice(0, -mainDisplay.value.length) + currentValue.toString();
+            expression = currentValue;
             historyDisplay.innerText = expression;
         }
         return;
     }
 
-    // اگر اپراتور در لیست تعریف‌شده باشد
+    if (input === 'sqrt') {
+        if (lastInput === 'number') {
+            expression += input; 
+            historyDisplay.innerText += ` ${input} `;
+        }
+        return;
+    }
+
     if (operators.includes(input)) {
-        // اگر حافظه مقدار داشته باشد و ورودی جدیدی ثبت نشده باشد
         if ((lastInput === '' || isCalculated) && memory !== null) {
             expression = memory.toString(); // استفاده از مقدار حافظه به عنوان مقدار اولیه
             historyDisplay.innerText = `${memory} ${input} `;
-            isCalculated = false; // ریست حالت محاسبه
+            isCalculated = false;
         }
         
-        // اگر عددی قبل از اپراتور وارد شده باشد
         if (lastInput === 'number') {
             expression += input;
             historyDisplay.innerText += ` ${input} `;
         }
-        // اگر قبلاً اپراتور دیگری ثبت شده باشد، جایگزین آن شود
         else if (lastInput === 'operator') {
             expression = expression.slice(0, -1) + input;
             historyDisplay.innerText = historyDisplay.innerText.slice(0, -2) + ` ${input} `;
@@ -112,7 +115,6 @@ function appendOperator(input) {
         lastInput = 'operator';
     }
 
-    // اگر تعداد اپراتورها در عبارت >= 2 باشد، محاسبه شود
     const escapedOperators = operators.map(op => op.replace(/[-\/\\^$.*+?()[\]{}|]/g, '\\$&'));
     const operatorPattern = escapedOperators.join('|');
     const regex = new RegExp(operatorPattern, 'g');
@@ -124,13 +126,7 @@ function appendOperator(input) {
 }
 
 
-function clearDisplay() {
-    mainDisplay.value = '0';
-    historyDisplay.innerText = '';
-    expression = "";
-    lastInput = 'number';
-    memory = null;
-}
+
 
 function calculate(isFromOperatore) {
     try {
@@ -151,24 +147,6 @@ function calculate(isFromOperatore) {
     }
 }
 
-function backspace() {
-    if (expression.length > 0) {
-        const lastChar = expression[expression.length - 1];
-
-        if (!isNaN(lastChar) || lastChar === '.') { 
-            expression = expression.slice(0, -1);
-            mainDisplay.value = mainDisplay.value.slice(0, -1);
-            historyDisplay.innerText = historyDisplay.innerText.slice(0, -1);
-            if (mainDisplay.value === '') {
-                mainDisplay.value = '0';
-            }
-            lastInput = 'number'; 
-        }
-        else if (['+', '-', '*', '/', '^2', 'sqrt', 'cos'].includes(lastChar)) {
-            return;
-        }
-    }
-}
 
 function _compute(isFromOperatore) {
     if (!isFromOperatore){
@@ -180,9 +158,8 @@ function _compute(isFromOperatore) {
 
     const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, '^2': 3, 'sqrt': 3, 'cos': 3 };
 
-    const _tokens = expression.match(/\d+(\.\d+)?|[+\-*/()^2sqrtcos]/g);
-
-    for (let i = 0; i < _tokens.length; i++) {
+    const _tokens = expression.match(/\d+(\.\d+)?|sqrt|\^2|[+\-*/()^]/g);
+        for (let i = 0; i < _tokens.length; i++) {
         let token = _tokens[i];
 
         if (!isNaN(token)) {
@@ -212,7 +189,6 @@ function _compute(isFromOperatore) {
         }
         _numbers.push(_applyOperator(left, right, operator));
     }
-
     return parseFloat(_numbers.peek().toFixed(4));
 }
 
@@ -233,6 +209,33 @@ function _applyOperator(left, right, operator) {
         case 'cos': 
             return Math.cos(left);
         default: throw new Error("Invalid operator");
+    }
+}
+
+function clearDisplay() {
+    mainDisplay.value = '0';
+    historyDisplay.innerText = '';
+    expression = "";
+    lastInput = 'number';
+    memory = null;
+}
+
+function backspace() {
+    if (expression.length > 0) {
+        const lastChar = expression[expression.length - 1];
+
+        if (!isNaN(lastChar) || lastChar === '.') { 
+            expression = expression.slice(0, -1);
+            mainDisplay.value = mainDisplay.value.slice(0, -1);
+            historyDisplay.innerText = historyDisplay.innerText.slice(0, -1);
+            if (mainDisplay.value === '') {
+                mainDisplay.value = '0';
+            }
+            lastInput = 'number'; 
+        }
+        else if (['+', '-', '*', '/', '^2', 'sqrt', 'cos'].includes(lastChar)) {
+            return;
+        }
     }
 }
 
