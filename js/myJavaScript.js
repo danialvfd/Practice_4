@@ -1,6 +1,6 @@
 const mainDisplay = document.getElementById("display");
 const historyDisplay = document.getElementById("historyContent");
-var isCalculated = false;
+var isFinalResultCalculated = false;
 var lastInput = '';
 var expression = ""; // متغیر برای ذخیره عبارت
 var memory = null;
@@ -38,16 +38,15 @@ class Stack {
 }
 
 function appendNumber(input) {
-    if (isCalculated) {
-        isCalculated = false;
+    if (isFinalResultCalculated) {
+        isFinalResultCalculated = false;
         mainDisplay.value = input;
         if (expression.slice(-1)=== '='){
             expression = input;
             historyDisplay.innerText = input;
-        }
-        else {
+        } else {
             expression += input;
-            historyDisplay.innerText += input;
+            historyDisplay.innerText += input;  //** مشکل اضافه شدن به هیستوری بعد از محاسبه 
         }
     } else {
         if (lastInput === 'operator') {
@@ -98,13 +97,11 @@ function appendOperator(input) {
     }
 
     if (operators.includes(input)) {
-        if ((lastInput === '' || isCalculated) && memory !== null) {
-            expression = memory.toString(); // استفاده از مقدار حافظه به عنوان مقدار اولیه
+        if ((lastInput === '' || isFinalResultCalculated) && memory !== null) {
+            expression = memory.toString()+`${input}`; // استفاده از مقدار حافظه به عنوان مقدار اولیه
             historyDisplay.innerText = `${memory} ${input} `;
-            isCalculated = false;
-        }
-        
-        if (lastInput === 'number') {
+            isFinalResultCalculated = false;
+        }else if (lastInput === 'number') {
             expression += input;
             historyDisplay.innerText += ` ${input} `;
         }
@@ -125,16 +122,14 @@ function appendOperator(input) {
     }
 }
 
-
-
-
 function calculate(isFromOperatore) {
     try {
         const result = _compute(isFromOperatore);
-      //  historyDisplay.innerText += ` = ${result}`;
         mainDisplay.value = result;
         memory = result;
-        lastInput = ''
+        if (!isFromOperatore){
+            historyDisplay.innerText += ` = ${result}`; // برای محاسبه نهایی
+        }
     } catch (error) {
         if (error.message === "Division by zero") {
             mainDisplay.value = "Infinity!";
@@ -142,11 +137,14 @@ function calculate(isFromOperatore) {
             mainDisplay.value = "Error";
         }
     } finally {
-        isCalculated = true;
-        lastInput = 'number';
+        isFinalResultCalculated = !isFromOperatore;
+        if (isFromOperatore) {
+            lastInput = 'operator';
+        } else {
+            lastInput = 'number';
+        }
     }
 }
-
 
 function _compute(isFromOperatore) {
     if (!isFromOperatore){
@@ -155,7 +153,6 @@ function _compute(isFromOperatore) {
 
     const _numbers = new Stack();
     const _operators = new Stack();
-
     const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, '^2': 3, 'sqrt': 3, 'cos': 3 };
 
     const _tokens = expression.match(/\d+(\.\d+)?|sqrt|\^2|[+\-*/()^]/g);
