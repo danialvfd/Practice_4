@@ -41,13 +41,9 @@ function appendNumber(input) {
     if (isFinalResultCalculated) {
         isFinalResultCalculated = false;
         mainDisplay.value = input;
-        if (expression.slice(-1)=== '='){
-            expression = input;
-            historyDisplay.innerText = input;
-        } else {
-            expression += input;
-            historyDisplay.innerText += input;  //** مشکل اضافه شدن به هیستوری بعد از محاسبه 
-        }
+        expression = input;
+        historyDisplay.innerText = input;  //** مشکل اضافه شدن به هیستوری بعد از محاسبه 
+
     } else {
         if (lastInput === 'operator') {
             mainDisplay.value = input;
@@ -90,7 +86,7 @@ function appendOperator(input) {
 
     if (input === 'sqrt') {
         if (lastInput === 'number') {
-            expression += input; 
+            expression += input;
             historyDisplay.innerText += ` ${input} `;
         }
         return;
@@ -98,10 +94,10 @@ function appendOperator(input) {
 
     if (operators.includes(input)) {
         if ((lastInput === '' || isFinalResultCalculated) && memory !== null) {
-            expression = memory.toString()+`${input}`; // استفاده از مقدار حافظه به عنوان مقدار اولیه
+            expression = memory.toString() + `${input}`; // استفاده از مقدار حافظه به عنوان مقدار اولیه
             historyDisplay.innerText = `${memory} ${input} `;
             isFinalResultCalculated = false;
-        }else if (lastInput === 'number') {
+        } else if (lastInput === 'number') {
             expression += input;
             historyDisplay.innerText += ` ${input} `;
         }
@@ -127,7 +123,7 @@ function calculate(isFromOperatore) {
         const result = _compute(isFromOperatore);
         mainDisplay.value = result;
         memory = result;
-        if (!isFromOperatore){
+        if (!isFromOperatore) {
             historyDisplay.innerText += ` = ${result}`; // برای محاسبه نهایی
         }
     } catch (error) {
@@ -147,7 +143,7 @@ function calculate(isFromOperatore) {
 }
 
 function _compute(isFromOperatore) {
-    if (!isFromOperatore){
+    if (!isFromOperatore) {
         expression = expression.replace(/\s+/g, '');
     }
 
@@ -156,12 +152,12 @@ function _compute(isFromOperatore) {
     const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, '^2': 3, 'sqrt': 3, 'cos': 3 };
 
     const _tokens = expression.match(/\d+(\.\d+)?|sqrt|\^2|[+\-*/()^]/g);
-        for (let i = 0; i < _tokens.length; i++) {
+    for (let i = 0; i < _tokens.length; i++) {
         let token = _tokens[i];
 
         if (!isNaN(token)) {
             _numbers.push(parseFloat(token));
-        } else if (token === '-' && (i === 0 || _tokens[i - 1] === '(' || isNaN(_tokens[i - 1]))) {
+        } else if (token === '-' && (i === 0 || isNaN(_tokens[i - 1]))) {
             _tokens[i + 1] = '-' + _tokens[i + 1];
         } else {
             while (!_operators.isEmpty() && precedence[_operators.peek()] >= precedence[token]) {
@@ -191,20 +187,20 @@ function _compute(isFromOperatore) {
 
 function _applyOperator(left, right, operator) {
     switch (operator) {
-        case '+': 
+        case '+':
             return left + right;
-        case '-': 
+        case '-':
             return left - right;
-        case '*': 
+        case '*':
             return left * right;
-        case '/': 
+        case '/':
             if (right === 0) throw new Error("infinity"); return left / right;
-        case '^2': 
-            return Math.pow(left, 2);
-        case 'sqrt': 
-            return Math.sqrt(left);
-        case 'cos': 
-            return Math.cos(left);
+        case '^2':
+            return Math.pow(right, 2);
+        case 'sqrt':
+            return Math.sqrt(right);
+        case 'cos':
+            return Math.cos(right);
         default: throw new Error("Invalid operator");
     }
 }
@@ -221,14 +217,14 @@ function backspace() {
     if (expression.length > 0) {
         const lastChar = expression[expression.length - 1];
 
-        if (!isNaN(lastChar) || lastChar === '.') { 
+        if (!isNaN(lastChar) || lastChar === '.') {
             expression = expression.slice(0, -1);
             mainDisplay.value = mainDisplay.value.slice(0, -1);
             historyDisplay.innerText = historyDisplay.innerText.slice(0, -1);
             if (mainDisplay.value === '') {
                 mainDisplay.value = '0';
             }
-            lastInput = 'number'; 
+            lastInput = 'number';
         }
         else if (['+', '-', '*', '/', '^2', 'sqrt', 'cos'].includes(lastChar)) {
             return;
@@ -236,7 +232,7 @@ function backspace() {
     }
 }
 
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     event.preventDefault();
     if (!isNaN(event.key)) {
         appendNumber(event.key);
