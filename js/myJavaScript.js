@@ -2,7 +2,7 @@ const mainDisplay = document.getElementById("display");
 const historyDisplay = document.getElementById("historyContent");
 var isFinalResultCalculated = false;
 var lastInput = '';
-var expression = ""; // متغیر برای ذخیره عبارت
+var expression = "";
 var memory = null;
 
 class Stack {
@@ -39,35 +39,36 @@ class Stack {
 
 function appendNumber(input) {
     if (isFinalResultCalculated) {
-        isFinalResultCalculated = false;
-        mainDisplay.value = input;
-        expression = input;
-        historyDisplay.innerText = input;  //** مشکل اضافه شدن به هیستوری بعد از محاسبه 
-
+        _resetForNewInput(input);
     } else {
-        if (lastInput === 'operator') {
-            mainDisplay.value = input;
-            expression += input;
-            historyDisplay.innerText += input;
-        } else {
-            if (input === '.' && mainDisplay.value.includes('.')) {
-                return;
-            }
-
-            if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
-                mainDisplay.value = input;
-                expression = input;
-                historyDisplay.innerText += input;
-            } else {
-                if (mainDisplay.value.replace('.', '').length < 11) {
-                    mainDisplay.value += input;
-                    expression += input;
-                    historyDisplay.innerText += input;
-                }
-            }
-        }
+        _handleNumberInput(input);
     }
     lastInput = 'number';
+}
+
+function _resetForNewInput(input) {
+    isFinalResultCalculated = false;
+    mainDisplay.value = input;
+    expression = input;
+    historyDisplay.innerText = input;
+}
+
+function _handleNumberInput(input) {
+    if (lastInput === 'operator') {
+        mainDisplay.value = input;
+        expression += input;
+        historyDisplay.innerText += input;
+    } else if (input === '.' && mainDisplay.value.includes('.')) {
+        return; 
+    } else if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
+        mainDisplay.value = input;
+        expression = input;
+        historyDisplay.innerText += input;
+    } else if (mainDisplay.value.replace('.', '').length < 11) {
+        mainDisplay.value += input;
+        expression += input;
+        historyDisplay.innerText += input;
+    }
 }
 
 function appendOperator(input) {
@@ -131,6 +132,7 @@ function calculate(isFromOperatore) {
             mainDisplay.value = "Infinity!";
         } else {
             mainDisplay.value = "Error";
+            console.error(error.message)
         }
     } finally {
         isFinalResultCalculated = !isFromOperatore;
@@ -151,7 +153,7 @@ function _compute(isFromOperatore) {
     const _operators = new Stack();
     const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, '^2': 3, 'sqrt': 3, 'cos': 3 };
 
-    const _tokens = expression.match(/\d+(\.\d+)?|sqrt|\^2|[+\-*/()^]/g);
+    const _tokens = expression.match(/\d+(\.\d+)?|sqrt| |cos|\^2|[+\-*/()^]/g);
     for (let i = 0; i < _tokens.length; i++) {
         let token = _tokens[i];
 
@@ -172,13 +174,16 @@ function _compute(isFromOperatore) {
 
     while (!_operators.isEmpty()) {
         const operator = _operators.pop();
-        const right = !_numbers.isEmpty() ? _numbers.pop() : console.error("right is null...");
+        let right = !_numbers.isEmpty() ? _numbers.pop() : console.error("right is null...");
         let left = 1;
-        if (operator === '+' || operator === '-') {
+        if (operator === '+') {
             left = 0;
         }
         if (!_numbers.isEmpty()) {
             left = _numbers.pop();
+        } else if (operator === '-') {
+            left = right;
+            right = 0;
         }
         _numbers.push(_applyOperator(left, right, operator));
     }
@@ -200,7 +205,7 @@ function _applyOperator(left, right, operator) {
         case 'sqrt':
             return Math.sqrt(right);
         case 'cos':
-            return Math.cos(right);
+            return Math.cos(right * Math.PI / 180);
         default: throw new Error("Invalid operator");
     }
 }
