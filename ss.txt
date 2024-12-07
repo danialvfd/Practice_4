@@ -1,3 +1,4 @@
+// نمایشگرها و متغیرهای اصلی
 const mainDisplay = document.getElementById("display");
 const historyDisplay = document.getElementById("historyContent");
 
@@ -6,372 +7,230 @@ let lastInput = '';
 let expression = "";
 let memory = null;
 
+// کلاس Stack برای مدیریت عملیات
 class Stack {
     constructor() {
         this.items = [];
     }
-
-    push(element) {
-        this.items.push(element);
-    }
-
-    pop() {
-        if (this.isEmpty()) throw new Error("Stack is empty");
-        return this.items.pop();
-    }
-
-    peek() {
-        if (this.isEmpty()) throw new Error("Stack is empty");
-        return this.items[this.items.length - 1];
-    }
-
-    isEmpty() {
-        return this.items.length === 0;
-    }
-
-    size() {
-        return this.items.length;
-    }
+    push(element) { this.items.push(element); }
+    pop() { return this.isEmpty() ? null : this.items.pop(); }
+    peek() { return this.isEmpty() ? null : this.items[this.items.length - 1]; }
+    isEmpty() { return this.items.length === 0; }
 }
 
+// توابع مربوط به ورودی کاربر
 function appendNumber(input) {
     if (isFinalResultCalculated) {
-        resetForNewInput(input);
+        _resetForNewInput(input);
     } else {
-        handleNumberInput(input);
+        _handleNumberInput(input);
     }
     lastInput = 'number';
 }
 
-function resetForNewInput(input) {
+function appendOperator(input) {
+    if (input === 'pm') return toggleSign();
+    if (input === 'sqrt') return appendSpecialOperator('sqrt');
+    _handleOperatorInput(input);
+    _autoCalculate();
+}
+
+function calculate(isFromOperator = false) {
+    try {
+        const result = _compute();
+        mainDisplay.value = result;
+        memory = result;
+
+        if (!isFromOperator) _updateHistoryWithResult(result);
+    } catch (error) {
+        _handleError(error);
+    } finally {
+        _finalizeCalculation(isFromOperator);
+    }
+}
+
+function clearDisplay() {
+    mainDisplay.value = '0';
+    historyDisplay.innerText = '';
+    expression = "";
+    lastInput = 'number';
+    memory = null;
+}
+
+function backspace() {
+    if (expression.length > 0) {
+        _handleBackspace();
+    }
+}
+
+// مدیریت ورودی صفحه‌کلید
+document.addEventListener('keydown', function (event) {
+    event.preventDefault();
+    if (!isNaN(event.key)) appendNumber(event.key);
+    else if (['+', '-', '*', '/'].includes(event.key)) appendOperator(event.key);
+    else if (event.key === 'Enter') calculate();
+    else if (event.key === '.') appendNumber(event.key);
+    else if (event.key === 'Backspace') backspace();
+});
+
+// توابع کمکی داخلی
+function _resetForNewInput(input) {
     isFinalResultCalculated = false;
     mainDisplay.value = input;
     expression = input;
     historyDisplay.innerText = input;
 }
 
-function handleNumberInput(input) {
+function _handleNumberInput(input) {
     if (lastInput === 'operator') {
         mainDisplay.value = input;
         expression += input;
-        historyDisplay.innerText += input;
     } else if (input === '.' && mainDisplay.value.includes('.')) {
-        return; // Prevent multiple decimals
-    } else if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
+        return; // جلوگیری از ورود چند نقطه
+    } else if (_isErrorState(mainDisplay.value)) {
         mainDisplay.value = input;
         expression = input;
-        historyDisplay.innerText += input;
     } else if (mainDisplay.value.replace('.', '').length < 11) {
         mainDisplay.value += input;
         expression += input;
-        historyDisplay.innerText += input;
     }
+    historyDisplay.innerText = expression;
 }
 
-function appendOperator(input) {
-    const operators = ['+', '-', '*', '/', '^2', 'sqrt', 'cos'];
+function _handleOperatorInput(input) {
+    const operators = ['+', '-', '*', '/'];
 
-    if (input === 'pm') handlePlusMinus();
-    
-    if (input === 'sqrt') handleSquareRoot();
-    
-    if (operators.includes(input)) handleOperator(input, operators);
-}
-
-function handlePlusMinus() {
-    if (lastInput === 'number' && mainDisplay.value !== '') {
-        const currentValue = parseFloat(mainDisplay.value) * -1;
-        updateDisplays(currentValue);
+    if (operators.includes(input)) {
+        if (isFinalResultCalculated) _resetAfterFinalResult(input);
+        else if (lastInput === 'number') _appendOperatorToExpression(input);
+        else if (lastInput === 'operator') _replaceLastOperator(input);
     }
-}
-
-function handleSquareRoot() {
-    if (lastInput === 'number') {
-        expression += 'sqrt';
-        historyDisplay.innerText += ` sqrt `;
-    }
-}
-
-function handleOperator(input, operators) {
-    const escapedOperators = operators.map(op => op.replace(/[-\/\\^$.*+?()[\]{}|]/g, '\\$&'));
-    const operatorPattern = escapedOperators.join('|');
-    
-    if ((lastInput === '' || isFinalResultCalculated) && memory !== null) {
-        expression = `${memory} ${input}`;
-        historyDisplay.innerText = `${memory} ${input} `;
-        isFinalResultCalculated = false;
-    } else if (lastInput === 'number') {
-        expression += ` ${input} `;
-        historyDisplay.innerText += ` ${input} `;
-    } else if (lastInput === 'operator') {
-        expression = expression.slice(0, -1) + ` ${input} `;
-        historyDisplay.innerText = historyDisplay.innerText.slice(0, -2) + ` ${input} `;
-    }
-    
     lastInput = 'operator';
+}
 
-    const regex = new RegExp(operatorPattern, 'g');
-    const matches = expression.match(regex);
-    
+function _autoCalculate() {
+    const matches = expression.match(/[+\-*/]/g);
     if (matches && matches.length >= 2) calculate(true);
 }
 
-function calculate(isFromOperator) {
-    try {
-        const result = _compute(isFromOperator);
-        updateDisplays(result, isFromOperator);
-        
-        memory = result; // Store the result in memory
-    } catch (error) {
-        handleError(error);
-    } finally {
-        updateLastInputState(isFromOperator);
+function _updateHistoryWithResult(result) {
+    const lastChar = historyDisplay.innerText.trim().slice(-1);
+    const operators = ['+', '-', '*', '/'];
+
+    if (operators.includes(lastChar)) {
+        historyDisplay.innerText = historyDisplay.innerText.slice(0, -1);
+    }
+    historyDisplay.innerText += ` = ${result}`;
+}
+
+function _handleBackspace() {
+    const lastChar = expression.slice(-1);
+
+    if (!isNaN(lastChar) || lastChar === '.') {
+        expression = expression.slice(0, -1);
+        mainDisplay.value = mainDisplay.value.slice(0, -1);
+        historyDisplay.innerText = historyDisplay.innerText.slice(0, -1);
+        if (!mainDisplay.value) mainDisplay.value = '0';
     }
 }
 
-function updateDisplays(result, isFromOperator) {
-   mainDisplay.value = result;
-   if (!isFromOperator) historyDisplay.innerText += ` = ${result}`;
+function toggleSign() {
+    if (lastInput === 'number' && mainDisplay.value) {
+        let currentValue = parseFloat(mainDisplay.value) * -1;
+        mainDisplay.value = currentValue;
+        expression = currentValue.toString();
+        historyDisplay.innerText = expression;
+    }
 }
 
-function handleError(error) {
-   mainDisplay.value = error.message === "Division by zero" ? "Infinity!" : "Error";
-   console.error(error.message);
+function appendSpecialOperator(operator) {
+    if (lastInput === 'number') {
+        expression += operator;
+        historyDisplay.innerText += ` ${operator} `;
+    }
 }
 
-function updateLastInputState(isFromOperator) {
-   isFinalResultCalculated = !isFromOperator;
-   lastInput = isFromOperator ? 'operator' : 'number';
+// مدیریت محاسبات
+function _compute() {
+    const _numbers = new Stack();
+    const _operators = new Stack();
+    const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, '^2': 3, 'sqrt': 3, 'cos': 3 };
+
+    const tokens = expression.match(/\d+(\.\d+)?|sqrt|cos|\^2|[+\-*/()]/g);
+    tokens.forEach(token => {
+        if (!isNaN(token)) _numbers.push(parseFloat(token));
+        else _handleToken(token, _numbers, _operators, precedence);
+    });
+
+    while (!_operators.isEmpty()) _processStacks(_numbers, _operators);
+    return parseFloat(_numbers.peek().toFixed(4));
 }
 
-function _compute(isFromOperator) {
-   if (!isFromOperator) expression = expression.replace(/\s+/g, '');
-
-   const numbersStack = new Stack();
-   const operatorsStack = new Stack();
-   const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, '^2': 3, 'sqrt': 3, 'cos': 3 };
-
-   const tokens = expression.match(/\d+(\.\d+)?|sqrt| |cos|\^2|[+\-*/()^]/g);
-   
-   for (let i = 0; i < tokens.length; i++) {
-       let token = tokens[i];
-
-       if (!isNaN(token)) {
-           numbersStack.push(parseFloat(token));
-       } else if (token === '-' && (i === 0 || isNaN(tokens[i - 1]))) {
-           tokens[i + 1] = '-' + tokens[i + 1];
-       } else processOperator(token, operatorsStack, numbersStack, precedence);
-   }
-
-   while (!operatorsStack.isEmpty()) processRemainingOperators(operatorsStack, numbersStack);
-
-   return parseFloat(numbersStack.peek().toFixed(4));
+function _handleToken(token, numbers, operators, precedence) {
+    while (!operators.isEmpty() && precedence[operators.peek()] >= precedence[token]) {
+        const op = operators.pop();
+        const right = numbers.pop();
+        const left = numbers.pop();
+        numbers.push(_applyOperator(left, right, op));
+    }
+    operators.push(token);
 }
 
-function processOperator(token, operatorsStack, numbersStack, precedence) {
-   while (!operatorsStack.isEmpty() && precedence[operatorsStack.peek()] >= precedence[token]) {
-       const operator = operatorsStack.pop();
-       const rightOperand = numbersStack.pop();
-       const leftOperand = numbersStack.pop();
-       numbersStack.push(_applyOperator(leftOperand, rightOperand, operator));
-   }
-   operatorsStack.push(token);
-}
-
-function processRemainingOperators(operatorsStack, numbersStack) {
-   const operator = operatorsStack.pop();
-   let rightOperand = !numbersStack.isEmpty() ? numbersStack.pop() : console.error("right is null...");
-   let leftOperand;
-
-   switch(operator) {
-       case '+':
-           leftOperand = !numbersStack.isEmpty() ? numbersStack.pop() : 0;
-           break;
-       case '-':
-           leftOperand = !numbersStack.isEmpty() ? numbersStack.pop() : rightOperand;
-           rightOperand = 0; // for subtraction
-           break;
-       default:
-           leftOperand = !numbersStack.isEmpty() ? numbersStack.pop() : console.error("left is null...");
-           break;
-   }
-   
-   numbersStack.push(_applyOperator(leftOperand, rightOperand, operator));
+function _processStacks(numbers, operators) {
+    const op = operators.pop();
+    const right = numbers.pop();
+    const left = numbers.pop() || 0;
+    numbers.push(_applyOperator(left, right, op));
 }
 
 function _applyOperator(left, right, operator) {
-   switch (operator) {
-       case '+': return left + right;
-       case '-': return left - right;
-       case '*': return left * right;
-       case '/': 
-           if (right === 0) throw new Error("Division by zero");
-           return left / right;
-       case '^2': return Math.pow(right, 2);
-       case 'sqrt': return Math.sqrt(right);
-       case 'cos': return Math.cos(right * Math.PI / 180);
-       default: throw new Error("Invalid operator");
-   }
+    const operations = {
+        '+': (a, b) => a + b,
+        '-': (a, b) => a - b,
+        '*': (a, b) => a * b,
+        '/': (a, b) => b === 0 ? Infinity : a / b,
+        '^2': (_, b) => b ** 2,
+        'sqrt': (_, b) => Math.sqrt(b),
+        'cos': (_, b) => Math.cos(b * Math.PI / 180)
+    };
+    return operations[operator](left, right);
 }
 
-function clearDisplay() {
-   mainDisplay.value = '0';
-   historyDisplay.innerText = '';
-   expression = "";
-   lastInput = 'number';
-   memory = null;
+function _finalizeCalculation(isFromOperator) {
+    isFinalResultCalculated = !isFromOperator;
+    lastInput = isFromOperator ? 'operator' : 'number';
 }
 
-function backspace() {
-   if (expression.length > 0) removeLastCharacter();
+function _isErrorState(value) {
+    return ['0', 'Error!', 'Infinity'].includes(value);
 }
 
-function removeLastCharacter() {
-   const lastChar = expression[expression.length - 1];
-
-   if (!isNaN(lastChar) || lastChar === '.') {
-       expression.slice(0, -1);
-       mainDisplay.value.slice(0, -1);
-       historyDisplay.innerText.slice(0, -1);
-
-       if (mainDisplay.value === '') mainDisplay.value = '0';
-       lastInput='number';
-   } else if (!['+', '-', '*', '/', '^2', 'sqrt', 'cos'].includes(lastChar)) { 
-      // Do nothing for operators
-      return; 
-   }
+function _handleError(error) {
+    mainDisplay.value = error.message === "Division by zero" ? "Infinity!" : "Error";
+    console.error(error.message);
 }
 
-// Event Listeners
-document.addEventListener('keydown', function(event) {
-   event.preventDefault();
-   
-   if (!isNaN(event.key)) appendNumber(event.key);
-   else if (['+', '-', '*', '/'].includes(event.key)) appendOperator(event.key);
-   else if (event.key === 'Enter') calculate(false);
-   else if (event.key === '.') appendNumber(event.key);
-   else if (event.key === 'Backspace') backspace();
-});
-
-
-****************
-const mainDisplay = document.getElementById("display");
-const historyDisplay = document.getElementById("historyContent");
-var isFinalResultCalculated = false;
-var lastInput = '';
-var expression = "";
-var memory = null;
-
-class Stack {
-    constructor() {
-        this.items = [];
-    }
-
-    push(element) {
-        this.items.push(element);
-    }
-
-    pop() {
-        if (this.isEmpty()) {
-            throw new Error("Stack is empty");
-        }
-        return this.items.pop();
-    }
-
-    peek() {
-        if (this.isEmpty()) {
-            throw new Error("Stack is empty");
-        }
-        return this.items[this.items.length - 1];
-    }
-
-    isEmpty() {
-        return this.items.length === 0;
-    }
-
-    size() {
-        return this.items.length;
-    }
+function _resetAfterFinalResult(operator) {
+    expression = memory.toString() + operator;
+    historyDisplay.innerText = `${memory} ${operator}`;
+    isFinalResultCalculated = false;
 }
 
-function appendNumber(input) {
-    if (isFinalResultCalculated) {
-        isFinalResultCalculated = false;
-        mainDisplay.value = input;
-        expression = input;
-        historyDisplay.innerText = input;
-    } else {
-        if (lastInput === 'operator') {
-            mainDisplay.value = input;
-            expression += input;
-            historyDisplay.innerText += input;
-        } else {
-            if (input === '.' && mainDisplay.value.includes('.')) {
-                return;
-            }
-
-            if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
-                mainDisplay.value = input;
-                expression = input;
-                historyDisplay.innerText += input;
-            } else if (mainDisplay.value.replace('.', '').length < 11) {
-                mainDisplay.value += input;
-                expression += input;
-                historyDisplay.innerText += input;
-            }
-
-        }
-    }
-    lastInput = 'number';
+function _appendOperatorToExpression(operator) {
+    expression += operator;
+    historyDisplay.innerText += ` ${operator} `;
 }
 
-function appendOperator(input) {
-    const operators = ['+', '-', '*', '/', '^2', 'sqrt', 'cos'];
-
-    if (input === 'pm') {
-        if (lastInput === 'number' && mainDisplay.value !== '') {
-            let currentValue = parseFloat(mainDisplay.value);
-            currentValue *= -1;
-            mainDisplay.value = currentValue;
-            expression = currentValue;
-            historyDisplay.innerText = expression;
-        }
-        return;
-    }
-
-    if (input === 'sqrt') {
-        if (lastInput === 'number') {
-            expression += input;
-            historyDisplay.innerText += ` ${input} `;
-        }
-        return;
-    }
-
-    if (operators.includes(input)) {
-        if ((lastInput === '' || isFinalResultCalculated) && memory !== null) {
-            expression = memory.toString() + `${input}`; // استفاده از مقدار حافظه به عنوان مقدار اولیه
-            historyDisplay.innerText = `${memory} ${input} `;
-            isFinalResultCalculated = false;
-        } else if (lastInput === 'number') {
-            expression += input;
-            historyDisplay.innerText += ` ${input} `;
-        }
-        else if (lastInput === 'operator') {
-            expression = expression.slice(0, -1) + input;
-            historyDisplay.innerText = historyDisplay.innerText.slice(0, -2) + ` ${input} `;
-        }
-        lastInput = 'operator';
-    }
-
-    const escapedOperators = operators.map(op => op.replace(/[-\/\\^$.*+?()[\]{}|]/g, '\\$&'));
-    const operatorPattern = escapedOperators.join('|');
-    const regex = new RegExp(operatorPattern, 'g');
-    const matches = expression.match(regex);
-    if (matches && matches.length >= 2) {
-        calculate(true);
-
-    }
+function _replaceLastOperator(operator) {
+    expression = expression.slice(0, -1) + operator;
+    historyDisplay.innerText = historyDisplay.innerText.slice(0, -2) + ` ${operator} `;
 }
+
+*************************************************
+    lastInput = isFromOperator ? 'operator' : 'number';
+
+در آخرین خط کلکوکیشن
+*************************************************
 
 function calculate(isFromOperatore) {
     try {
@@ -379,7 +238,12 @@ function calculate(isFromOperatore) {
         mainDisplay.value = result;
         memory = result;
         if (!isFromOperatore) {
-            historyDisplay.innerText += ` = ${result}`; // برای محاسبه نهایی
+            const lastChar = historyDisplay.innerText.trim().slice(-1);
+            const operators = ['+', '-', '*', '/'];
+            if (operators.includes(lastChar)) {
+                historyDisplay.innerText = historyDisplay.innerText.trim().slice(0, -1); // حذف آخرین اپراتور
+            }
+            historyDisplay.innerText +=  = ${result}; // برای محاسبه نهایی
         }
     } catch (error) {
         if (error.message === "Division by zero") {
@@ -397,111 +261,3 @@ function calculate(isFromOperatore) {
         }
     }
 }
-
-function _compute(isFromOperatore) {
-    if (!isFromOperatore) {
-        expression = expression.replace(/\s+/g, '');
-    }
-
-    const _numbers = new Stack();
-    const _operators = new Stack();
-    const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, '^2': 3, 'sqrt': 3, 'cos': 3 };
-
-    const _tokens = expression.match(/\d+(\.\d+)?|sqrt| |cos|\^2|[+\-*/()^]/g);
-    for (let i = 0; i < _tokens.length; i++) {
-        let token = _tokens[i];
-
-        if (!isNaN(token)) {
-            _numbers.push(parseFloat(token));
-        } else if (token === '-' && (i === 0 || isNaN(_tokens[i - 1]))) {
-            _tokens[i + 1] = '-' + _tokens[i + 1];
-        } else {
-            while (!_operators.isEmpty() && precedence[_operators.peek()] >= precedence[token]) {
-                const operator = _operators.pop();
-                const right = _numbers.pop();
-                const left = _numbers.pop();
-                _numbers.push(_applyOperator(left, right, operator));
-            }
-            _operators.push(token);
-        }
-    }
-
-    while (!_operators.isEmpty()) {
-        const operator = _operators.pop();
-        let right = !_numbers.isEmpty() ? _numbers.pop() : console.error("right is null...");
-        let left = 1;
-        if (operator === '+') {
-            left = 0;
-        }
-        if (!_numbers.isEmpty()) {
-            left = _numbers.pop();
-        } else if (operator === '-') {
-            left = right;
-            right = 0;
-        }
-        _numbers.push(_applyOperator(left, right, operator));
-    }
-    return parseFloat(_numbers.peek().toFixed(4));
-}
-
-function _applyOperator(left, right, operator) {
-    switch (operator) {
-        case '+':
-            return left + right;
-        case '-':
-            return left - right;
-        case '*':
-            return left * right;
-        case '/':
-            if (right === 0) throw new Error("infinity"); return left / right;
-        case '^2':
-            return Math.pow(right, 2);
-        case 'sqrt':
-            return Math.sqrt(right);
-        case 'cos':
-            return Math.cos(right * Math.PI / 180);
-        default: throw new Error("Invalid operator");
-    }
-}
-
-function clearDisplay() {
-    mainDisplay.value = '0';
-    historyDisplay.innerText = '';
-    expression = "";
-    lastInput = 'number';
-    memory = null;
-}
-
-function backspace() {
-    if (expression.length > 0) {
-        const lastChar = expression[expression.length - 1];
-
-        if (!isNaN(lastChar) || lastChar === '.') {
-            expression = expression.slice(0, -1);
-            mainDisplay.value = mainDisplay.value.slice(0, -1);
-            historyDisplay.innerText = historyDisplay.innerText.slice(0, -1);
-            if (mainDisplay.value === '') {
-                mainDisplay.value = '0';
-            }
-            lastInput = 'number';
-        }
-        else if (['+', '-', '*', '/', '^2', 'sqrt', 'cos'].includes(lastChar)) {
-            return;
-        }
-    }
-}
-
-document.addEventListener('keydown', function (event) {
-    event.preventDefault();
-    if (!isNaN(event.key)) {
-        appendNumber(event.key);
-    } else if (['+', '-', '*', '/'].includes(event.key)) {
-        appendOperator(event.key);
-    } else if (event.key === 'Enter') {
-        calculate(false);
-    } else if (event.key === '.') {
-        appendNumber(event.key);
-    } else if (event.key === 'Backspace') {
-        appendOperator('Backspace');
-    }
-});

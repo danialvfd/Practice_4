@@ -59,7 +59,7 @@ function _handleNumberInput(input) {
         expression += input;
         historyDisplay.innerText += input;
     } else if (input === '.' && mainDisplay.value.includes('.')) {
-        return; 
+        return;
     } else if (mainDisplay.value === '0' || mainDisplay.value === "Error!" || mainDisplay.value === "Infinity") {
         mainDisplay.value = input;
         expression = input;
@@ -75,73 +75,102 @@ function appendOperator(input) {
     const operators = ['+', '-', '*', '/', '^2', 'sqrt', 'cos'];
 
     if (input === 'pm') {
-        if (lastInput === 'number' && mainDisplay.value !== '') {
-            let currentValue = parseFloat(mainDisplay.value);
-            currentValue *= -1;
-            mainDisplay.value = currentValue;
-            expression = currentValue;
-            historyDisplay.innerText = expression;
-        }
+        _appendPnSign();
         return;
     }
 
     if (input === 'sqrt') {
-        if (lastInput === 'number') {
-            expression += input;
-            historyDisplay.innerText += ` ${input} `;
-        }
+        _appendSqrtOperator(input);
         return;
     }
 
     if (operators.includes(input)) {
-        if ((lastInput === '' || isFinalResultCalculated) && memory !== null) {
-            expression = memory.toString() + `${input}`; // استفاده از مقدار حافظه به عنوان مقدار اولیه
-            historyDisplay.innerText = `${memory} ${input} `;
-            isFinalResultCalculated = false;
-        } else if (lastInput === 'number') {
-            expression += input;
-            historyDisplay.innerText += ` ${input} `;
-        }
-        else if (lastInput === 'operator') {
-            expression = expression.slice(0, -1) + input;
-            historyDisplay.innerText = historyDisplay.innerText.slice(0, -2) + ` ${input} `;
-        }
-        lastInput = 'operator';
-    }
-
-    const escapedOperators = operators.map(op => op.replace(/[-\/\\^$.*+?()[\]{}|]/g, '\\$&'));
-    const operatorPattern = escapedOperators.join('|');
-    const regex = new RegExp(operatorPattern, 'g');
-    const matches = expression.match(regex);
-    if (matches && matches.length >= 2) {
-        calculate(true);
-
+        _appendStandardOperator(input);
+        _autoCalculate();
     }
 }
 
-function calculate(isFromOperatore) {
+function _appendPnSign() {
+    if (lastInput === 'number' && mainDisplay.value) {
+        const currentValue = parseFloat(mainDisplay.value) * -1;
+        mainDisplay.value = currentValue;
+        expression = currentValue.toString();
+        historyDisplay.innerText = expression;
+    }
+}
+
+function _appendSqrtOperator(input) {
+    if (lastInput === 'number') {
+        expression += input;
+        historyDisplay.innerText += ` ${input} `;
+    }
+}
+
+function _appendStandardOperator(input) {
+    if ((lastInput === '' || isFinalResultCalculated) && memory !== null) {
+        expression = `${memory}${input}`;
+        historyDisplay.innerText = `${memory} ${input} `;
+        isFinalResultCalculated = false;
+    } else if (lastInput === 'number') {
+        expression += input;
+        historyDisplay.innerText += ` ${input} `;
+    } else if (lastInput === 'operator') {
+        expression = expression.slice(0, -1) + input;
+        historyDisplay.innerText = historyDisplay.innerText.slice(0, -2) + ` ${input} `;
+    }
+    lastInput = 'operator';
+}
+
+function _autoCalculate() {
+    const operators = ['+', '-', '*', '/', '^2', 'sqrt', 'cos'];
+    const regex = new RegExp(operators.map(op => `\\${op}`).join('|'), 'g');
+    const matches = expression.match(regex);
+    if (matches && matches.length >= 2) {
+        calculate(true);
+    }
+}
+
+
+function calculate(isFromOperator) {
     try {
-        const result = _compute(isFromOperatore);
+        const result = _compute();
         mainDisplay.value = result;
         memory = result;
-        if (!isFromOperatore) {
-            historyDisplay.innerText += ` = ${result}`; // برای محاسبه نهایی
-        }
+        if (!isFromOperator){
+            _finalizeHistory(result);
+        } 
     } catch (error) {
-        if (error.message === "Division by zero") {
-            mainDisplay.value = "Infinity!";
-        } else {
-            mainDisplay.value = "Error";
-            console.error(error.message)
-        }
+        _handleCalculationError(error);
     } finally {
-        isFinalResultCalculated = !isFromOperatore;
-        if (isFromOperatore) {
-            lastInput = 'operator';
-        } else {
-            lastInput = 'number';
-        }
+        _updateCalculationState(isFromOperator);
     }
+}
+
+function _finalizeHistory(result) {
+    _removeOperatorAftercalculation();
+    historyDisplay.innerText += ` = ${result}`;
+}
+
+function _removeOperatorAftercalculation() {
+    const lastChar = historyDisplay.innerText.trim().slice(-1);
+    const operators = ['+', '-', '*', '/'];
+    if (operators.includes(lastChar)) {
+        historyDisplay.innerText = historyDisplay.innerText.trim().slice(0, -1);
+    }
+}
+
+function _handleCalculationError(error) {
+    if (error.message === "Division by zero") {
+        mainDisplay.value = "Infinity!";
+    } else {
+        mainDisplay.value = "Error";
+        console.error(error.message);
+    }
+}
+
+function _updateCalculationState(isFromOperator) {
+    isFinalResultCalculated = !isFromOperator;
+    lastInput = isFromOperator ? 'operator' : 'number';
 }
 
 function _compute(isFromOperatore) {
