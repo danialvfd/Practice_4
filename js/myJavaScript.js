@@ -31,10 +31,6 @@ class Stack {
     isEmpty() {
         return this.items.length === 0;
     }
-
-    size() {
-        return this.items.length;
-    }
 }
 
 function appendNumber(input) {
@@ -147,16 +143,12 @@ function calculate(isFromOperator) {
 }
 
 function _finalizeHistory(result) {
-    _removeOperatorAftercalculation();
-    historyDisplay.innerText += ` = ${result}`;
-}
-
-function _removeOperatorAftercalculation() {
     const lastChar = historyDisplay.innerText.trim().slice(-1);
     const operators = ['+', '-', '*', '/'];
     if (operators.includes(lastChar)) {
         historyDisplay.innerText = historyDisplay.innerText.trim().slice(0, -1);
     }
+    historyDisplay.innerText += ` = ${result}`;
 }
 
 function _handleCalculationError(error) {
